@@ -5,6 +5,46 @@ const { verifyPassword } = require("../util/index");
 const query = util.promisify(pool.query).bind(pool);
 
 class Services {
+  async checkCondition(item_id, quantity) {
+    let success = true;
+
+    for (let i = 0; i < item_id.length; i++) {
+      const item_id_sub = item_id[i];
+      const quantity_sub = quantity[i];
+
+      let queryText =
+        "SELECT * FROM item JOIN item_detail ON item.item_id = item_detail.item_id WHERE item.item_id = ?";
+      let resultCheck = await query(queryText, item_id_sub);
+
+      if (!resultCheck) {
+        success = false;
+        break;
+      }
+
+      let quantity_res = resultCheck.quantity;
+
+      if (quantity_res - quantity_sub > 0) {
+        queryText = "UPDATE item_detail SET quantity = ?";
+        let resultUp = await query(queryText, quantity_res - quantity_sub);
+
+        if (!resultUp) {
+          success = false;
+          break;
+        }
+      } else {
+        queryText = "DELETE FROM item WHERE item_id = ?";
+        let resultDelete = await query(queryText, item_id_sub);
+
+        if (!resultDelete) {
+          success = false;
+          break;
+        }
+      }
+    }
+
+    return success;
+  }
+
   async addDataIntoDb(nameTable, data) {
     if (!pool) {
       throw new Error("Database pool not initialized");
@@ -21,7 +61,9 @@ class Services {
 
         const result = await query(queryText, queryParams);
         if (result.affectedRows > 0) {
-          return true;
+          return {
+            account_id: result.insertId,
+          };
         } else {
           return false;
         }
