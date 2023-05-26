@@ -453,6 +453,36 @@ class UserController {
       }
     }
   }
+
+  async changePasswordUser(req, res) {
+    const { account_id, oldPassword, user_email, newPassword } = req.body;
+
+    if (!account_id || !oldPassword || !user_email || !newPassword) {
+      return res.json({ status: 400, message: "Invalid data" });
+    }
+    let result;
+    try {
+      result = await Services.authUser({
+        username_email: user_email,
+        password: oldPassword,
+      });
+      if (result && result.status === 200) {
+        const hashedPassword = await hashPassword(newPassword);
+        let queryText = "Update account set password =? where account_id = ?";
+        let result = await query(queryText, [hashedPassword, account_id]);
+
+        if (result) {
+          res.json({ status: 200, message: "Change password successfully" });
+        } else {
+          res.json({ status: 400, message: "Change password failed" });
+        }
+      } else {
+        return res.json({ status: 400, message: "Password old not match" });
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  }
 }
 
 function generateVerificationCode() {
