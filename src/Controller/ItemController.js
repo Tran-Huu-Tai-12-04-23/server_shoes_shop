@@ -107,18 +107,18 @@ class ItemController {
            SELECT item.*, item_detail.*, (
             SELECT photo_item.link_photo
             FROM photo_item
-            WHERE item.item_id = photo_item.item_id
+            WHERE item.item_id = photo_item.item_id and item.is_delete = 0
             LIMIT 1
         ) AS link_photo, item_sale.price_sale
         FROM item
-        INNER JOIN item_detail ON item.item_id = item_detail.item_id
+        INNER JOIN item_detail ON item.item_id = item_detail.item_id  and item.is_delete = 0
         LEFT JOIN (
             SELECT item_id, MAX(date_start) AS max_date_start
             FROM item_sale
             WHERE date_end >= CURRENT_TIMESTAMP
             GROUP BY item_id
         ) AS latest_sale ON item.item_id = latest_sale.item_id
-        LEFT JOIN item_sale ON latest_sale.item_id = item_sale.item_id AND latest_sale.max_date_start = item_sale.date_start
+        LEFT JOIN item_sale ON latest_sale.item_id = item_sale.item_id AND latest_sale.max_date_start = item_sale.date_start and item.is_delete = 0
 
       `;
     const result = await query(queryText);
@@ -301,6 +301,7 @@ WHERE
     if (number) {
       queryText = queryText + `limit  ${0}, ${number}`;
     }
+
     const result = await query(queryText);
     if (result) {
       return res.json({
@@ -388,7 +389,7 @@ WHERE
           FROM item_sale
           JOIN item_detail ON item_sale.item_id = item_detail.item_id
           JOIN photo_item ON item_detail.item_id = photo_item.item_id
-          JOIN item ON item_detail.item_id = item.item_id
+          JOIN item ON item_detail.item_id = item.item_id and item.is_delete = 0
           GROUP BY item_detail.item_id
           ORDER BY item_sale.date_start DESC;
     `;
@@ -540,7 +541,7 @@ WHERE
 
     // Insert order details
     let queryText =
-      "INSERT INTO order_detail (phone_number,item_id, name_client, email_client, total, address, name_item, quantity, order_id) VALUES ";
+      "INSERT INTO order_detail (phone_number,item_id, name_client, email_client, price, address, name_item, quantity, order_id) VALUES ";
     let params = [];
 
     for (let i = 0; i < item_id.length; i++) {
@@ -680,7 +681,7 @@ WHERE
       return res.json({ status: 400, message: "Invalid data " });
     }
 
-    const { status_process, status, order_detail_id } = data;
+    const { status_process, status, order_detail_id, reason } = data;
     if (!status_process || !status || !order_detail_id) {
       return res.json({ status: 400, message: "Invalid data " });
     }
@@ -711,8 +712,9 @@ WHERE
       return res.json({ status: 400, message: "Invalid data " });
     }
 
-    const { order_detail_id } = data;
-    if (!order_detail_id) {
+    const { order_detail_id, order_id, reason } = data;
+
+    if (!order_detail_id || !order_id || !reason) {
       return res.json({ status: 400, message: "Invalid data " });
     }
     let queryText = "Select * from order_detail where order_detail_id = ?";
@@ -735,10 +737,19 @@ WHERE
       "UPDATE order_detail set status_process = -1 , status = 'canceled' where order_detail_id = ? ";
     result = await query(queryText, order_detail_id);
     if (result) {
-      res.json({
-        status: 200,
-        message: "Cancel order successfully",
-      });
+      queryText = "INSERT into order_cancel(order_id, reason) values(?,?)";
+      result = await query(queryText, [order_id, reason]);
+      if (result) {
+        res.json({
+          status: 200,
+          message: "Cancel order successfully",
+        });
+      } else {
+        res.json({
+          status: 400,
+          message: "Insert order cancel failed!!",
+        });
+      }
     } else {
       res.json({
         status: 400,
@@ -766,13 +777,18 @@ WHERE
 
   async countTotalOrder(req, res) {
     let account_id = req.query.account_id;
-    if (!account_id) {
-      return res.json({ status: 400, message: "Invalid data" });
+    let queryText;
+    let result;
+    if (account_id) {
+      queryText =
+        "SELECT SUM(order_detail.price) AS count_total FROM order_detail JOIN `order` ON `order`.order_id = order_detail.order_id WHERE `order`.account_id = ?;";
+      result = await query(queryText, account_id);
+    } else {
+      queryText =
+        "SELECT SUM(order_detail.price) AS count_total FROM order_detail ";
+      result = await query(queryText);
     }
-    let queryText =
-      "SELECT SUM(order_detail.total) AS count_total FROM order_detail JOIN `order` ON `order`.order_id = order_detail.order_id WHERE `order`.account_id = ?;";
 
-    const result = await query(queryText, account_id);
     if (result && result.length > 0) {
       res.json({
         status: 200,
@@ -787,7 +803,7 @@ WHERE
 
   async countBalance(req, res) {
     let queryText =
-      "SELECT sum(order_detail.total) as count_balance FROM order_detail WHERE status_process = 5;";
+      "SELECT sum(order_detail.price) as count_balance FROM order_detail WHERE status_process = 5;";
 
     const result = await query(queryText);
     if (result && result.length > 0) {
@@ -797,7 +813,7 @@ WHERE
       });
     } else {
       res.json({
-        status: 200,
+        status: 400,
       });
     }
   }
@@ -814,7 +830,33 @@ WHERE
       });
     } else {
       res.json({
+        status: 400,
+      });
+    }
+  }
+
+  async delete(req, res) {
+    const { item_id } = req.body;
+
+    if (!item_id) {
+      return res.json({
+        status: 400,
+        message: "Invalid data",
+      });
+    }
+
+    let queryText = "UPDATE item set is_delete = 1 where item_id = ?;";
+
+    const result = await query(queryText, item_id);
+    if (result && result.length > 0) {
+      res.json({
         status: 200,
+        message: "Delete successfully!",
+      });
+    } else {
+      res.json({
+        status: 400,
+        message: "Delete failed!",
       });
     }
   }

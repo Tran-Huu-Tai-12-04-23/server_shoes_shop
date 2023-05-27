@@ -54,32 +54,34 @@ CREATE TABLE item (
     item_id INT PRIMARY KEY KEY AUTO_INCREMENT,
     name VARCHAR(255),
     branch_id INT,
-    FOREIGN KEY (branch_id) REFERENCES branch_store(branch_id)
+    FOREIGN KEY (branch_id) REFERENCES branch_store(branch_id),
+    is_delete boolean default 0
 );
 
 CREATE TABLE photo_item (
     link_photo VARCHAR(500) NOT NULL,
     item_id Int ,
-    FOREIGN KEY (item_id) REFERENCES item(item_id)
+    FOREIGN KEY (item_id) REFERENCES item(item_id),
     type VARCHAR(255) DEFAULT 'normal'
 );
 
 CREATE TABLE item_detail (
-    item_detail_id INT PRIMARY KEY  AUTO_INCREMENT,
-    quantity INT NOT NULL,
-    cost FLOAT NOT NULL,
-    status VARCHAR(255) default 'unknown',
-    color VARCHAR(255),
-    brand VARCHAR(255) NOT NULL DEFAULT 'unknown origin',
-     INT NOT NULL,
-    type VARCHAR(255) not null,
-    des text ,
-    gender VARCHAR(255) default 'unisex',
-    age varchar(255) not null,
-    add_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    item_id INT,
-    FOREIGN KEY (item_id) REFERENCES item(item_id)
+  item_detail_id INT PRIMARY KEY AUTO_INCREMENT,
+  quantity INT NOT NULL,
+  cost FLOAT NOT NULL,
+  status VARCHAR(255) DEFAULT 'unknown',
+  color VARCHAR(255),
+  brand VARCHAR(255) NOT NULL DEFAULT 'unknown origin',
+  size INT NOT NULL, -- Added column name
+  type VARCHAR(255) NOT NULL,
+  des TEXT,
+  gender VARCHAR(255) DEFAULT 'unisex',
+  age VARCHAR(255) NOT NULL,
+  add_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  item_id INT,
+  FOREIGN KEY (item_id) REFERENCES item(item_id)
 );
+
 
 CREATE TABLE supplier (
     supplier_id INT PRIMARY KEY KEY AUTO_INCREMENT,
@@ -118,24 +120,24 @@ CREATE TABLE `order` (
 );
 
 CREATE TABLE order_detail (
-    order_detail_id INT AUTO_INCREMENT PRIMARY KEY;
-    status varchar(255) NOT NULL default 'preparing',
-    item_id int,
-    order_id INT,
-    phone_number VARCHAR(255),
-    name_client VARCHAR(255),
-    email_client VARCHAR(255),
-    price FLOAT not null,
-    address varchar(255),
-    user_note TEXT,
-    name_item VARCHAR(255) NOT NULL,
-    quantity INT NOT NULL,
-    status VARCHAR(255) default 'Wait to confirmation',
-    status_process int 0,
-    order_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_id) REFERENCES `order` (order_id)
-    FOREIGN KEY (item_id) REFERENCES `item` (item_id)
+  order_detail_id INT AUTO_INCREMENT PRIMARY KEY,
+  item_id INT,
+  order_id INT,
+  phone_number VARCHAR(255),
+  name_client VARCHAR(255),
+  email_client VARCHAR(255),
+  price FLOAT NOT NULL,
+  address VARCHAR(255),
+  user_note TEXT,
+  name_item VARCHAR(255) NOT NULL,
+  quantity INT NOT NULL,
+  status VARCHAR(255) DEFAULT 'Wait to confirmation',
+  status_process INT DEFAULT 0,
+  order_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (order_id) REFERENCES `order` (order_id),
+  FOREIGN KEY (item_id) REFERENCES `item` (item_id),
 );
+
 
 CREATE TABLE item_sale (
     sale_id INT PRIMARY KEY KEY AUTO_INCREMENT,
@@ -156,10 +158,14 @@ CREATE TABLE review (
     FOREIGN KEY (item_id) REFERENCES item (item_id)
 );
 
+create TABLE order_cancel (
+    order_id int ,
+    reason text, 
+    FOREIGN key(order_id) REFERENCES `order`(order_id)
+)
+
 INSERT INTO branch_store (hotline, name, address) VALUES ('1900-1111', 'TP Ho Chi Minh', '30/38 Lam Van Ben, Quan 7, TP HCM');
 INSERT INTO branch_store (hotline, name, address) VALUES ('1900-1112', 'TP Ha Noi', '30/38 Tây Hồ, Hà Nội, Việt Nam.');
-
-
 
 INSERT INTO `item` (`item_id`, `name`, `branch_id`) VALUES (11, "Nike Air Force 1 '07 Men's Shoes", 1);
 

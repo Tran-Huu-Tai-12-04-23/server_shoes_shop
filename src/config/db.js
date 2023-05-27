@@ -12,6 +12,7 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
+
 module.exports = pool;
 // simple query
 // const test = () => {

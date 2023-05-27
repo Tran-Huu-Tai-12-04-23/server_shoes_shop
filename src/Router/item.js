@@ -22,5 +22,6 @@ router.post("/sale/add", ItemController.addSalesItem);
 router.get("/sale/all", ItemController.getSaleItem);
 router.delete("/sale/delete", ItemController.removeSaleItem);
 router.put("/sale/edit", ItemController.saveEditItemSale);
+router.put("/delete", ItemController.delete);
 
 module.exports = router;

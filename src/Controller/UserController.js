@@ -375,7 +375,7 @@ class UserController {
     }
 
     const queryText =
-      "SELECT SUM(od.total) AS total_value FROM `order` o JOIN order_detail od ON o.order_id = od.order_id JOIN account u ON o.account_id = u.account_id WHERE u.account_id = ? AND od.status_process = 5;";
+      "SELECT SUM(od.price) AS total_value FROM `order` o JOIN order_detail od ON o.order_id = od.order_id JOIN account u ON o.account_id = u.account_id WHERE u.account_id = ? AND od.status_process = 5;";
 
     const result = await query(queryText, [id]);
 
