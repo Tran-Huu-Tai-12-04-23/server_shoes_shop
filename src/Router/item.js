@@ -23,5 +23,7 @@ router.get("/sale/all", ItemController.getSaleItem);
 router.delete("/sale/delete", ItemController.removeSaleItem);
 router.put("/sale/edit", ItemController.saveEditItemSale);
 router.put("/delete", ItemController.delete);
+router.get("/trash", ItemController.getItemDelete);
+router.put("/restore", ItemController.restore);
 
 module.exports = router;

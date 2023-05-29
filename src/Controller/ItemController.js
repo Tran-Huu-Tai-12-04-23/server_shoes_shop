@@ -145,50 +145,50 @@ class ItemController {
       });
     }
     let queryText = `SELECT 
-  item.*,
-  item_detail.*,
-  photo_item.link_photo,
-  item_sale.price_sale,
-  item_sale.date_end AS sale_date_end
-FROM 
-  item
-INNER JOIN 
-  item_detail ON item.item_id = item_detail.item_id
-LEFT JOIN 
-  photo_item ON item.item_id = photo_item.item_id
-LEFT JOIN 
-  item_sale ON item.item_id = item_sale.item_id
-WHERE 
-  item.item_id = ?
-  AND item_sale.date_end = (
-    SELECT MAX(date_end)
-    FROM item_sale
-    WHERE item_sale.item_id = item.item_id
-    AND item_sale.date_end > CURRENT_TIMESTAMP
-  )
+          item.*,
+          item_detail.*,
+          photo_item.link_photo,
+          item_sale.price_sale,
+          item_sale.date_end AS sale_date_end
+        FROM 
+          item
+        INNER JOIN 
+          item_detail ON item.item_id = item_detail.item_id
+        LEFT JOIN 
+          photo_item ON item.item_id = photo_item.item_id
+        LEFT JOIN 
+          item_sale ON item.item_id = item_sale.item_id
+        WHERE 
+          item.item_id = ?
+          AND item_sale.date_end = (
+            SELECT MAX(date_end)
+            FROM item_sale
+            WHERE item_sale.item_id = item.item_id
+            AND item_sale.date_end > CURRENT_TIMESTAMP
+          )
 
-UNION
+        UNION
 
-SELECT 
-  item.*,
-  item_detail.*,
-  photo_item.link_photo,
-  NULL AS price_sale,
-  NULL AS sale_date_end
-FROM 
-  item
-INNER JOIN 
-  item_detail ON item.item_id = item_detail.item_id
-LEFT JOIN 
-  photo_item ON item.item_id = photo_item.item_id
-WHERE 
-  item.item_id = ?
-  AND NOT EXISTS (
-    SELECT 1
-    FROM item_sale
-    WHERE item_sale.item_id = item.item_id
-  )
-`;
+        SELECT 
+          item.*,
+          item_detail.*,
+          photo_item.link_photo,
+          NULL AS price_sale,
+          NULL AS sale_date_end
+        FROM 
+          item
+        INNER JOIN 
+          item_detail ON item.item_id = item_detail.item_id
+        LEFT JOIN 
+          photo_item ON item.item_id = photo_item.item_id
+        WHERE 
+          item.item_id = ?
+          AND NOT EXISTS (
+            SELECT 1
+            FROM item_sale
+            WHERE item_sale.item_id = item.item_id
+          )
+        `;
 
     const result = await query(queryText, [data.id, data.id]);
     if (result) {
@@ -857,6 +857,64 @@ WHERE
       res.json({
         status: 400,
         message: "Delete failed!",
+      });
+    }
+  }
+
+  async getItemDelete(req, res) {
+    const queryText = `SELECT item.*, item_detail.*, (
+            SELECT photo_item.link_photo
+            FROM photo_item
+            WHERE item.item_id = photo_item.item_id and item.is_delete = 1
+            LIMIT 1
+        ) AS link_photo, item_sale.price_sale
+        FROM item
+        INNER JOIN item_detail ON item.item_id = item_detail.item_id  and item.is_delete = 1
+        LEFT JOIN (
+            SELECT item_id, MAX(date_start) AS max_date_start
+            FROM item_sale
+            WHERE date_end >= CURRENT_TIMESTAMP
+            GROUP BY item_id
+        ) AS latest_sale ON item.item_id = latest_sale.item_id
+        LEFT JOIN item_sale ON latest_sale.item_id = item_sale.item_id AND latest_sale.max_date_start = item_sale.date_start and item.is_delete = 1 ;`;
+
+    const result = await query(queryText);
+    if (result) {
+      res.json({
+        status: 200,
+        message: "Get item delete successfully!",
+        data: result,
+      });
+    } else {
+      res.json({
+        status: 400,
+        message: "Get item delete failed!",
+      });
+    }
+  }
+
+  async restore(req, res) {
+    const { item_id } = req.body;
+
+    if (!item_id) {
+      return res.json({
+        status: 400,
+        message: "Invalid item id",
+      });
+    }
+
+    const queryText = "UPDATE item set is_delete = 0 where item_id = ?";
+    const result = await query(queryText, item_id);
+
+    if (result) {
+      res.json({
+        status: 200,
+        message: "Restore item successfully!",
+      });
+    } else {
+      res.json({
+        status: 400,
+        message: "Restore item failed!",
       });
     }
   }
