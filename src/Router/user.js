@@ -12,6 +12,7 @@ router.post("/add-employee", UserController.addNewEmployee);
 router.post("/get-id-user", UserController.getIdUser);
 router.post("/update-profile", UserController.updateProfile);
 router.post("/change-password-user", UserController.changePasswordUser);
+router.get("/all", UserController.getAllUser);
 router.post("/", UserController.getUser);
 
 module.exports = router;

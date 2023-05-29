@@ -483,6 +483,18 @@ class UserController {
       console.log(e);
     }
   }
+
+  async getAllUser(req, res) {
+    const queryText = `SELECT * FROM account LEFT JOIN profile ON account.account_id = profile.account_id WHERE account.role_account = 0;`;
+
+    const result = await query(queryText);
+
+    if (result) {
+      res.json({ status: 200, message: "Get user successfully", data: result });
+    } else {
+      res.json({ status: 400, message: "Get user failed!" });
+    }
+  }
 }
 
 function generateVerificationCode() {
