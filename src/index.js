@@ -11,6 +11,9 @@ app.use(
     referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   })
 );
+app.get("/", (req, res) => {
+  res.send("hello welcome to api shoes shop");
+});
 
 const port = process.env.PORT || 3300;
 app.listen(port, () => {
